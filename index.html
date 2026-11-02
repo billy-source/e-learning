@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LearnHub – Online Learning Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] } } } };
+  </script>
+  <style>
+    :focus-visible { outline: 2px solid #6366f1; outline-offset: 2px; border-radius: 6px; }
+    .prose-lesson { font-size: 1.02rem; }
+    .prose-lesson h3 { font-size: 1.2rem; font-weight: 700; margin: 1.6rem 0 .5rem; }
+    .prose-lesson p { margin: .85rem 0; line-height: 1.75; }
+    .prose-lesson ul { list-style: disc; padding-left: 1.5rem; margin: .85rem 0; line-height: 1.75; }
+    .prose-lesson code { background: rgba(100,116,139,.16); padding: .1rem .35rem; border-radius: .25rem; font-size: .88em; }
+    .prose-lesson pre { background: #0f172a; color: #e2e8f0; padding: 1rem 1.1rem; border-radius: .6rem; overflow-x: auto; margin: 1.1rem 0; font-size: .85rem; line-height: 1.6; }
+    .prose-lesson pre code { background: none; padding: 0; }
+    dialog::backdrop { background: rgba(15, 23, 42, .55); backdrop-filter: blur(2px); }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: #fff !important; }
+      #app { max-width: none !important; padding: 0 !important; }
+      .cert { box-shadow: none !important; border-width: 6px !important; }
+    }
+  </style>
+</head>
+<body class="font-sans bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col antialiased">
+
+  <div id="header" class="no-print"></div>
+  <main id="app" class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10"></main>
+
+  <footer class="no-print border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row gap-4 sm:items-center justify-between text-sm text-slate-500 dark:text-slate-400">
+      <p><span class="font-semibold text-slate-700 dark:text-slate-200">LearnHub</span> · Practical online courses</p>
+      <p>© <span id="year"></span> LearnHub. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <div id="toast" role="status" aria-live="polite" class="no-print fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-medium px-4 py-2.5 rounded-lg shadow-lg opacity-0 pointer-events-none transition-opacity"></div>
+  <dialog id="dlg" class="rounded-2xl p-0 w-[92%] max-w-md bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-2xl border border-slate-200 dark:border-slate-700"></dialog>
+
+<script>
+/* ================================================================
+   COURSE CONTENT – edit this array to add or change courses
+   ================================================================ */
+const COURSES = [
+  {
+    id: 'html-basics', title: 'HTML Fundamentals', category: 'Web Development', level: 'Beginner',
+    icon: 'code', tint: 'bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400',
+    instructor: 'Amina Wanjiru', minutes: 45,
+    description: 'Learn how web pages are structured. Build your first page from scratch using semantic HTML.',
+    lessons: [
+      { title: 'What is HTML?', minutes: 10, content: `
+        <p>HTML (HyperText Markup Language) describes the <strong>structure</strong> of a web page. Browsers read HTML and turn it into what you see on screen.</p>
+        <h3>A minimal page</h3>
+        <pre><code>&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+  &lt;head&gt;&lt;title&gt;Hello&lt;/title&gt;&lt;/head&gt;
+  &lt;body&gt;&lt;h1&gt;Hello, world!&lt;/h1&gt;&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+        <p>Everything is built from <strong>elements</strong>: an opening tag, content, and a closing tag.</p>` },
+      { title: 'Text, links and images', minutes: 15, content: `
+        <p>Headings run from <code>&lt;h1&gt;</code> to <code>&lt;h6&gt;</code>. Paragraphs use <code>&lt;p&gt;</code>.</p>
+        <ul>
+          <li><code>&lt;a href="..."&gt;</code> creates a link</li>
+          <li><code>&lt;img src="..." alt="..."&gt;</code> shows an image – always write alt text</li>
+          <li><code>&lt;ul&gt;</code> and <code>&lt;ol&gt;</code> make lists</li>
+        </ul>` },
+      { title: 'Semantic layout', minutes: 20, content: `
+        <p>Semantic elements describe meaning, which helps accessibility and SEO.</p>
+        <ul>
+          <li><code>&lt;header&gt;</code>, <code>&lt;nav&gt;</code>, <code>&lt;main&gt;</code>, <code>&lt;footer&gt;</code></li>
+          <li><code>&lt;section&gt;</code> and <code>&lt;article&gt;</code> group related content</li>
+        </ul>
+        <p>Prefer these over a pile of generic <code>&lt;div&gt;</code> elements.</p>` }
+    ],
+    quiz: [
+      { q: 'What does HTML stand for?', options: ['HyperText Markup Language', 'High Tech Modern Language', 'Home Tool Markup Language', 'Hyperlink Text Mode Language'], answer: 0 },
+      { q: 'Which attribute provides alternative text for an image?', options: ['title', 'alt', 'src', 'name'], answer: 1 },
+      { q: 'Which element is best for the main navigation links?', options: ['<div>', '<section>', '<nav>', '<span>'], answer: 2 }
+    ]
+  },
+  {
+    id: 'tailwind-css', title: 'Styling with Tailwind CSS', category: 'Web Development', level: 'Beginner',
+    icon: 'layout', tint: 'bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400',
+    instructor: 'Brian Otieno', minutes: 50,
+    description: 'Build modern, responsive interfaces quickly using utility classes instead of writing custom CSS.',
+    lessons: [
+      { title: 'Utility-first thinking', minutes: 15, content: `
+        <p>Instead of writing CSS rules, you compose small utility classes directly in your HTML.</p>
+        <pre><code>&lt;button class="bg-indigo-600 text-white px-4 py-2 rounded-lg"&gt;Save&lt;/button&gt;</code></pre>
+        <p>Each class does one thing: background color, text color, padding, rounded corners.</p>` },
+      { title: 'Responsive design', minutes: 20, content: `
+        <p>Prefix a utility with a breakpoint to apply it from that screen size up.</p>
+        <pre><code>&lt;div class="grid grid-cols-1 md:grid-cols-3 gap-4"&gt;...&lt;/div&gt;</code></pre>
+        <p>This is <strong>mobile-first</strong>: one column by default, three from the <code>md</code> breakpoint.</p>` },
+      { title: 'Dark mode and states', minutes: 15, content: `
+        <p>Variants such as <code>hover:</code>, <code>focus:</code> and <code>dark:</code> style different states.</p>
+        <pre><code>class="bg-white dark:bg-slate-900 hover:bg-slate-100"</code></pre>` }
+    ],
+    quiz: [
+      { q: 'Tailwind is best described as…', options: ['A JavaScript framework', 'A utility-first CSS framework', 'A database', 'A component library with fixed designs'], answer: 1 },
+      { q: 'Which class makes a grid with 3 columns?', options: ['cols-3', 'grid-3', 'grid grid-cols-3', 'columns-3-grid'], answer: 2 },
+      { q: 'What does the md: prefix mean?', options: ['Applies only on mobile', 'Applies from the medium breakpoint up', 'Applies in dark mode', 'Applies on hover'], answer: 1 }
+    ]
+  },
+  {
+    id: 'js-essentials', title: 'JavaScript Essentials', category: 'Programming', level: 'Intermediate',
+    icon: 'bolt', tint: 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400',
+    instructor: 'Grace Mutua', minutes: 60,
+    description: 'Variables, functions, arrays and the DOM – everything you need to make pages interactive.',
+    lessons: [
+      { title: 'Variables and functions', minutes: 20, content: `
+        <p>Use <code>const</code> for values that do not change and <code>let</code> for those that do.</p>
+        <pre><code>const greet = (name) =&gt; \`Hello, \${name}!\`;
+console.log(greet('Amina'));</code></pre>` },
+      { title: 'Arrays and objects', minutes: 20, content: `
+        <p>Arrays hold lists; objects hold named properties.</p>
+        <pre><code>const nums = [1, 2, 3];
+const doubled = nums.map(n =&gt; n * 2); // [2, 4, 6]</code></pre>
+        <p>Useful array methods: <code>map</code>, <code>filter</code>, <code>reduce</code>, <code>find</code>.</p>` },
+      { title: 'Working with the DOM', minutes: 20, content: `
+        <p>The DOM lets JavaScript read and change the page.</p>
+        <pre><code>document.querySelector('#btn')
+  .addEventListener('click', () =&gt; alert('Clicked!'));</code></pre>` }
+    ],
+    quiz: [
+      { q: 'Which keyword declares a constant?', options: ['var', 'let', 'const', 'fixed'], answer: 2 },
+      { q: 'What does [1,2,3].map(n => n * 2) return?', options: ['[1,2,3]', '[2,4,6]', '6', '[3,2,1]'], answer: 1 },
+      { q: 'Which method attaches a click handler?', options: ['onClick()', 'addEventListener()', 'attachEvent()', 'listen()'], answer: 1 }
+    ]
+  },
+  {
+    id: 'digital-marketing', title: 'Digital Marketing Basics', category: 'Business', level: 'Beginner',
+    icon: 'chart', tint: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400',
+    instructor: 'Kevin Mwangi', minutes: 40,
+    description: 'Understand SEO, social media and email marketing, and how to measure what works.',
+    lessons: [
+      { title: 'The marketing funnel', minutes: 12, content: `
+        <p>Customers move through stages: <strong>Awareness → Consideration → Decision → Loyalty</strong>.</p>
+        <p>Each channel and message should match the stage your audience is in.</p>` },
+      { title: 'SEO in a nutshell', minutes: 15, content: `
+        <p>Search Engine Optimization helps people find you organically.</p>
+        <ul><li>Research keywords people actually search</li><li>Write helpful, original content</li><li>Make pages fast and mobile-friendly</li></ul>` },
+      { title: 'Measuring results', minutes: 13, content: `
+        <p>Track metrics tied to goals: traffic, conversion rate, cost per acquisition and return on ad spend.</p>
+        <p>Test one change at a time (A/B testing) so you know what caused the improvement.</p>` }
+    ],
+    quiz: [
+      { q: 'What does SEO stand for?', options: ['Social Engagement Optimization', 'Search Engine Optimization', 'Site Execution Order', 'Search Email Outreach'], answer: 1 },
+      { q: 'Which is a conversion-related metric?', options: ['Font size', 'Conversion rate', 'Server uptime', 'Image count'], answer: 1 },
+      { q: 'A/B testing means…', options: ['Testing two variants to compare results', 'Testing twice a day', 'Asking a boss for approval', 'Backing up a website'], answer: 0 }
+    ]
+  }
+];
+const PASS_MARK = 60;
+
+/* ================================================================
+   ICONS
+   ================================================================ */
+const ICON = {
+  book: 'M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25',
+  clock: 'M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z',
+  check: 'M4.5 12.75l6 6 9-13.5',
+  code: 'M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5',
+  layout: 'M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z',
+  bolt: 'M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z',
+  chart: 'M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z',
+  search: 'M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z',
+  moon: 'M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z',
+  sun: 'M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z',
+  left: 'M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18',
+  right: 'M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3',
+  lock: 'M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z',
+  cap: 'M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5',
+  x: 'M6 18L18 6M6 6l12 12',
+  question: 'M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z',
+  users: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z',
+  download: 'M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3',
+  print: 'M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5zm-3 0h.008v.008H15V10.5z',
+  shield: 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z',
+  trash: 'M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0',
+  logout: 'M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9',
+  play: 'M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z',
+  refresh: 'M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99'
+};
+const icon = (n, c = 'w-5 h-5') => `<svg class="${c} shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="${ICON[n]}"/></svg>`;
+
+/* ================================================================
+   DATA LAYER  (localStorage – swap these functions for API calls
+   when you add a real backend)
+   ================================================================ */
+const DB_KEY = 'learnhub-db-v2', SESSION_KEY = 'learnhub-session-v2', THEME_KEY = 'learnhub-theme';
+const DAY = 864e5;
+let db = { users: [], progress: {} };
+try { const d = JSON.parse(localStorage.getItem(DB_KEY)); if (d && Array.isArray(d.users)) db = { users: d.users, progress: d.progress || {} }; } catch (e) {}
+const persist = () => { try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch (e) { toast('Could not save – browser storage is unavailable'); } };
+
+const uid = () => 'u' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+function hashPw(pw, salt) { // demo-grade hash only – real apps must hash on the server
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57; const s = salt + pw;
+  for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16);
+}
+function makeUser(name, email, password, role) {
+  const salt = Math.random().toString(36).slice(2);
+  return { id: uid(), name, email, salt, pass: password ? hashPw(password, salt) : '', role, created: Date.now(), lastActive: Date.now() };
+}
+if (!db.users.some(u => u.role === 'admin')) { db.users.push(makeUser('Administrator', 'admin@learnhub.com', 'admin123', 'admin')); persist(); }
+
+const P = id => (db.progress[id] ||= { enrolled: [], done: {}, quiz: {}, log: [] });
+const students = () => db.users.filter(u => u.role === 'student');
+const userById = id => db.users.find(u => u.id === id);
+const getCourse = id => COURSES.find(c => c.id === id);
+function me() { try { const id = localStorage.getItem(SESSION_KEY); return id ? userById(id) || null : null; } catch (e) { return null; } }
+function logEvent(userId, type, courseId, text, t = Date.now()) {
+  const p = P(userId); p.log.push({ t, type, courseId, text }); if (p.log.length > 200) p.log.shift();
+  const u = userById(userId); if (u) u.lastActive = t;
+}
+
+/* per-user derived values */
+const isEnrolled = (cid, u) => !!u && P(u.id).enrolled.includes(cid);
+const doneList = (cid, u) => (u ? P(u.id).done[cid] || [] : []);
+const pctOf = (c, u) => Math.round((doneList(c.id, u).length / c.lessons.length) * 100);
+const quizRec = (cid, u) => (u ? P(u.id).quiz[cid] : null) || null;
+const passed = (cid, u) => (quizRec(cid, u)?.best ?? -1) >= PASS_MARK;
+const isComplete = (c, u) => pctOf(c, u) === 100 && passed(c.id, u);
+const statusOf = (c, u) => isComplete(c, u) ? 'Completed' : (pctOf(c, u) > 0 || quizRec(c.id, u)) ? 'In progress' : 'Not started';
+const mean = a => a.length ? Math.round(a.reduce((x, y) => x + y, 0) / a.length) : null;
+
+/* ================================================================
+   UI HELPERS
+   ================================================================ */
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const app = $('#app');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+const go = h => { if (location.hash === h) route(); else location.hash = h; };
+const fmtDate = t => t ? new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+function ago(t) {
+  if (!t) return '—'; const s = (Date.now() - t) / 1000;
+  if (s < 60) return 'just now'; if (s < 3600) return Math.floor(s / 60) + ' min ago';
+  if (s < 86400) return Math.floor(s / 3600) + ' h ago'; if (s < 30 * 86400) return Math.floor(s / 86400) + ' d ago';
+  return fmtDate(t);
+}
+function toast(msg) {
+  const t = $('#toast'); t.innerHTML = `${icon('check', 'w-4 h-4')}<span>${esc(msg)}</span>`;
+  t.classList.remove('opacity-0'); clearTimeout(toast.id); toast.id = setTimeout(() => t.classList.add('opacity-0'), 2400);
+}
+const AV = ['bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300', 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300', 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300', 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300', 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300', 'bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300'];
+function avatar(name, size = 'w-9 h-9 text-sm') {
+  const n = String(name || '?').trim(); const parts = n.split(/\s+/);
+  const ini = ((parts[0]?.[0] || '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase() || '?';
+  let h = 0; for (const ch of n) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return `<span class="${size} ${AV[h % AV.length]} rounded-full inline-flex items-center justify-center font-semibold shrink-0">${esc(ini)}</span>`;
+}
+
+const cardCls = 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl';
+const btnPrimary = 'inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+const btnGhost = 'inline-flex items-center justify-center gap-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors';
+const btnDanger = 'inline-flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors';
+const inputCls = 'w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500';
+
+function bar(pct, color = 'bg-indigo-600') {
+  return `<div class="h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><div class="h-full ${color} rounded-full transition-all" style="width:${pct}%"></div></div>`;
+}
+function badge(status) {
+  const m = {
+    'Completed': 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-400/20',
+    'In progress': 'bg-amber-50 text-amber-700 ring-amber-600/20 dark:bg-amber-950/50 dark:text-amber-300 dark:ring-amber-400/20',
+    'Not started': 'bg-slate-100 text-slate-600 ring-slate-500/20 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-400/20'
+  };
+  return `<span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ring-1 ring-inset ${m[status]}">${status}</span>`;
+}
+function pageHead(title, sub, actions = '') {
+  return `<div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+    <div><h1 class="text-2xl sm:text-3xl font-bold tracking-tight">${title}</h1>${sub ? `<p class="text-slate-500 dark:text-slate-400 mt-1">${sub}</p>` : ''}</div>
+    <div class="flex gap-2">${actions}</div></div>`;
+}
+const stat = (label, val, sub = '') => `<div class="${cardCls} p-5"><p class="text-sm text-slate-500 dark:text-slate-400">${label}</p><p class="text-3xl font-bold tracking-tight mt-1">${val}</p>${sub ? `<p class="text-xs text-slate-500 dark:text-slate-400 mt-1">${sub}</p>` : ''}</div>`;
+const backLink = (href, label) => `<a href="${href}" class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 mb-4">${icon('left', 'w-4 h-4')}${label}</a>`;
+
+/* modal dialog – returns a Promise (true/false, or string for input) */
+function dialog({ title, message = '', input = null, confirm = 'Confirm', cancel = 'Cancel', danger = false }) {
+  return new Promise(resolve => {
+    const d = $('#dlg');
+    d.innerHTML = `<form method="dialog" class="p-6">
+      <h2 class="text-lg font-semibold">${esc(title)}</h2>
+      ${message ? `<p class="text-sm text-slate-500 dark:text-slate-400 mt-2">${esc(message)}</p>` : ''}
+      ${input ? `<input id="dlgInput" class="${inputCls} mt-4" value="${esc(input.value || '')}" placeholder="${esc(input.placeholder || '')}" maxlength="40" />` : ''}
+      <div class="flex justify-end gap-2 mt-6">
+        ${cancel ? `<button value="cancel" class="${btnGhost}">${esc(cancel)}</button>` : ''}
+        <button value="ok" class="${danger ? btnDanger : btnPrimary}">${esc(confirm)}</button>
+      </div></form>`;
+    d.onclose = () => {
+      const ok = d.returnValue === 'ok';
+      resolve(input ? (ok ? ($('#dlgInput')?.value || '').trim() : null) : ok);
+      d.returnValue = '';
+    };
+    d.showModal(); $('#dlgInput')?.focus();
+  });
+}
+
+/* ================================================================
+   HEADER
+   ================================================================ */
+function renderHeader() {
+  const u = me(); const page = (location.hash || '#/').split('/')[1] || '';
+  const dark = document.documentElement.classList.contains('dark');
+  const link = (href, label, active) => `<a href="${href}" ${active ? 'aria-current="page"' : ''} class="px-3 py-2 text-sm font-medium rounded-md transition-colors ${active ? 'text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/50' : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'}">${label}</a>`;
+  const links = [link('#/', 'Courses', page === '' || page === 'course' || page === 'learn' || page === 'quiz')];
+  if (u && u.role === 'student') links.push(link('#/dashboard', 'My Learning', page === 'dashboard' || page === 'certificate'));
+  if (u && u.role === 'admin') links.push(link('#/admin', 'Admin', page === 'admin'));
+  $('#header').innerHTML = `
+  <header class="sticky top-0 z-30 border-b border-slate-200 dark:border-slate-800 bg-white/85 dark:bg-slate-900/85 backdrop-blur">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-6">
+      <a href="#/" class="flex items-center gap-2.5 font-bold text-lg tracking-tight">
+        <span class="w-8 h-8 rounded-lg bg-indigo-600 text-white inline-flex items-center justify-center">${icon('cap', 'w-5 h-5')}</span>LearnHub
+      </a>
+      <nav class="hidden sm:flex items-center gap-1" aria-label="Main">${links.join('')}</nav>
+      <div class="ml-auto flex items-center gap-1.5">
+        <button id="themeBtn" class="w-9 h-9 inline-flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Toggle dark mode">${icon(dark ? 'sun' : 'moon', 'w-5 h-5')}</button>
+        ${u ? `
+          <div class="hidden sm:flex items-center gap-2 pl-2 ml-1 border-l border-slate-200 dark:border-slate-800">
+            ${avatar(u.name, 'w-8 h-8 text-xs')}
+            <div class="leading-tight pr-1"><p class="text-sm font-medium">${esc(u.name)}</p><p class="text-xs text-slate-500 dark:text-slate-400 capitalize">${u.role}</p></div>
+          </div>
+          <button id="logoutBtn" class="w-9 h-9 inline-flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Sign out" title="Sign out">${icon('logout', 'w-5 h-5')}</button>
+        ` : `
+          <a href="#/login" class="${btnGhost} !py-2">Sign in</a>
+          <a href="#/signup" class="${btnPrimary} !py-2 hidden sm:inline-flex">Get started</a>`}
+      </div>
+    </div>
+    <nav class="sm:hidden flex gap-1 px-4 pb-2" aria-label="Main mobile">${links.join('')}</nav>
+  </header>`;
+  $('#themeBtn').onclick = () => {
+    const d = document.documentElement.classList.toggle('dark');
+    try { localStorage.setItem(THEME_KEY, d ? 'dark' : 'light'); } catch (e) {}
+    renderHeader();
+  };
+  $('#logoutBtn')?.addEventListener('click', () => { try { localStorage.removeItem(SESSION_KEY); } catch (e) {} toast('Signed out'); go('#/'); });
+}
+
+/* ================================================================
+   AUTH
+   ================================================================ */
+let redirectTo = null;
+function requireUser() { if (me()) return true; redirectTo = location.hash; go('#/login'); return false; }
+function requireAdmin() { const u = me(); if (u && u.role === 'admin') return true; if (!u) { redirectTo = location.hash; go('#/login'); } else go('#/dashboard'); return false; }
+function afterLogin(u) { const to = redirectTo; redirectTo = null; go(to && to !== '#/login' && to !== '#/signup' ? to : (u.role === 'admin' ? '#/admin' : '#/dashboard')); }
+
+function viewAuth(mode) {
+  if (me()) return go(me().role === 'admin' ? '#/admin' : '#/dashboard');
+  const signup = mode === 'signup';
+  app.innerHTML = `
+  <div class="max-w-md mx-auto">
+    <div class="text-center mb-8">
+      <span class="w-12 h-12 rounded-xl bg-indigo-600 text-white inline-flex items-center justify-center mb-4">${icon('cap', 'w-7 h-7')}</span>
+      <h1 class="text-2xl font-bold tracking-tight">${signup ? 'Create your account' : 'Welcome back'}</h1>
+      <p class="text-slate-500 dark:text-slate-400 mt-1">${signup ? 'Start learning in under a minute.' : 'Sign in to continue your courses.'}</p>
+    </div>
+    <div class="${cardCls} p-6 sm:p-8 shadow-sm">
+      <form id="authForm" class="space-y-4" novalidate>
+        ${signup ? `<div><label class="block text-sm font-medium mb-1.5" for="fName">Full name</label><input id="fName" class="${inputCls}" autocomplete="name" maxlength="60" /></div>` : ''}
+        <div><label class="block text-sm font-medium mb-1.5" for="fEmail">Email</label><input id="fEmail" type="email" class="${inputCls}" autocomplete="email" /></div>
+        <div><label class="block text-sm font-medium mb-1.5" for="fPass">Password</label><input id="fPass" type="password" class="${inputCls}" autocomplete="${signup ? 'new-password' : 'current-password'}" /></div>
+        <p id="authErr" class="text-sm text-rose-600 dark:text-rose-400 hidden" role="alert"></p>
+        <button class="${btnPrimary} w-full">${signup ? 'Create account' : 'Sign in'}</button>
+      </form>
+      <p class="text-sm text-center text-slate-500 dark:text-slate-400 mt-5">
+        ${signup ? 'Already have an account?' : 'New to LearnHub?'}
+        <a href="#/${signup ? 'login' : 'signup'}" class="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">${signup ? 'Sign in' : 'Create an account'}</a>
+      </p>
+    </div>
+    ${signup ? '' : `<div class="mt-4 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 p-4 text-xs text-slate-500 dark:text-slate-400 flex gap-3">
+      ${icon('shield', 'w-5 h-5 mt-0.5')}<p><span class="font-semibold text-slate-700 dark:text-slate-200">Demo admin access:</span> admin@learnhub.com / admin123. Change this before using the platform for real.</p></div>`}
+  </div>`;
+  $('#authForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const err = m => { const el = $('#authErr'); el.textContent = m; el.classList.remove('hidden'); };
+    const email = $('#fEmail').value.trim().toLowerCase(), pass = $('#fPass').value;
+    if (signup) {
+      const name = $('#fName').value.trim();
+      if (!name) return err('Please enter your name.');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return err('Please enter a valid email address.');
+      if (pass.length < 6) return err('Password must be at least 6 characters.');
+      if (db.users.some(u => u.email === email)) return err('An account with this email already exists.');
+      const u = makeUser(name, email, pass, 'student'); db.users.push(u); P(u.id); persist();
+      localStorage.setItem(SESSION_KEY, u.id); toast('Account created'); afterLogin(u);
+    } else {
+      const u = db.users.find(x => x.email === email);
+      if (!u || !u.pass || u.pass !== hashPw(pass, u.salt)) return err('Incorrect email or password.');
+      u.lastActive = Date.now(); persist(); localStorage.setItem(SESSION_KEY, u.id); toast('Signed in'); afterLogin(u);
+    }
+  });
+}
+
+/* ================================================================
+   STUDENT VIEWS
+   ================================================================ */
+let filters = { q: '', cat: 'All' };
+
+function courseCard(c) {
+  const u = me(); const enrolled = isEnrolled(c.id, u), pct = pctOf(c, u);
+  return `
+  <a href="#/course/${c.id}" class="${cardCls} p-5 flex flex-col hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-md transition">
+    <div class="flex items-start justify-between">
+      <span class="w-11 h-11 rounded-lg inline-flex items-center justify-center ${c.tint}">${icon(c.icon, 'w-6 h-6')}</span>
+      ${enrolled ? badge(statusOf(c, u)) : `<span class="text-xs font-medium text-slate-500 dark:text-slate-400">${c.level}</span>`}
+    </div>
+    <p class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 mt-4">${c.category}</p>
+    <h3 class="font-semibold text-lg leading-snug mt-1">${esc(c.title)}</h3>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mt-2 flex-1">${esc(c.description)}</p>
+    <div class="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400 mt-4">
+      <span class="inline-flex items-center gap-1">${icon('book', 'w-4 h-4')}${c.lessons.length} lessons</span>
+      <span class="inline-flex items-center gap-1">${icon('clock', 'w-4 h-4')}${c.minutes} min</span>
+    </div>
+    ${enrolled ? `<div class="mt-4">${bar(pct)}<p class="text-xs text-slate-500 dark:text-slate-400 mt-1.5">${pct}% complete</p></div>` :
+      `<div class="flex items-center gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">${avatar(c.instructor, 'w-6 h-6 text-[10px]')}<span class="text-xs text-slate-600 dark:text-slate-300">${esc(c.instructor)}</span></div>`}
+  </a>`;
+}
+
+function viewHome() {
+  const u = me();
+  const cats = ['All', ...new Set(COURSES.map(c => c.category))];
+  const totalLessons = COURSES.reduce((n, c) => n + c.lessons.length, 0);
+  const totalMin = COURSES.reduce((n, c) => n + c.minutes, 0);
+  const hero = u && u.role === 'student' ? `
+    <section class="mb-10">
+      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Welcome back, ${esc(u.name.split(' ')[0])}</h1>
+      <p class="text-slate-500 dark:text-slate-400 mt-1">Pick up where you left off or explore something new.</p>
+    </section>` : `
+    <section class="rounded-2xl bg-slate-900 dark:bg-slate-900 dark:border dark:border-slate-800 text-white px-6 sm:px-12 py-12 sm:py-16 mb-10 relative overflow-hidden">
+      <div class="absolute -right-24 -top-24 w-80 h-80 rounded-full bg-indigo-600/30 blur-3xl" aria-hidden="true"></div>
+      <div class="relative max-w-2xl">
+        <p class="text-indigo-300 text-sm font-semibold tracking-wide uppercase">Online learning platform</p>
+        <h1 class="text-3xl sm:text-5xl font-bold tracking-tight mt-3 leading-tight">Build practical skills, one lesson at a time.</h1>
+        <p class="text-slate-300 mt-4 text-lg">Structured courses, short lessons and quizzes with progress tracking, so you always know what to do next.</p>
+        <div class="flex flex-wrap gap-3 mt-8">
+          ${u ? `<a href="#/admin" class="${btnPrimary}">Open admin</a>` : `<a href="#/signup" class="${btnPrimary}">Create free account</a><a href="#/login" class="inline-flex items-center justify-center gap-2 border border-white/25 hover:bg-white/10 text-white text-sm font-semibold px-4 py-2.5 rounded-lg">Sign in</a>`}
+        </div>
+        <dl class="grid grid-cols-3 gap-6 mt-12 max-w-md">
+          <div><dt class="text-slate-400 text-xs">Courses</dt><dd class="text-2xl font-bold">${COURSES.length}</dd></div>
+          <div><dt class="text-slate-400 text-xs">Lessons</dt><dd class="text-2xl font-bold">${totalLessons}</dd></div>
+          <div><dt class="text-slate-400 text-xs">Hours of content</dt><dd class="text-2xl font-bold">${(totalMin / 60).toFixed(1)}</dd></div>
+        </dl>
+      </div>
+    </section>`;
+
+  app.innerHTML = `${hero}
+    <div class="flex flex-col md:flex-row gap-3 md:items-center justify-between mb-6">
+      <h2 class="text-xl font-semibold">All courses</h2>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">${icon('search', 'w-4 h-4')}</span>
+          <input id="search" type="search" aria-label="Search courses" placeholder="Search courses" value="${esc(filters.q)}" class="${inputCls} !pl-9 sm:w-64" /></div>
+        <div id="cats" class="flex flex-wrap gap-2">${cats.map(c => `<button data-cat="${esc(c)}" class="px-3.5 py-2 rounded-lg text-sm font-medium border transition-colors ${filters.cat === c ? 'bg-indigo-600 text-white border-indigo-600' : 'border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'}">${esc(c)}</button>`).join('')}</div>
+      </div>
+    </div>
+    <div id="grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>`;
+
+  const grid = $('#grid');
+  const draw = () => {
+    const q = filters.q.toLowerCase();
+    const list = COURSES.filter(c => (filters.cat === 'All' || c.category === filters.cat) && (c.title + c.description + c.instructor).toLowerCase().includes(q));
+    grid.innerHTML = list.length ? list.map(courseCard).join('') : `<p class="col-span-full text-center text-slate-500 py-16">No courses match your search.</p>`;
+  };
+  draw();
+  $('#search').addEventListener('input', e => { filters.q = e.target.value; draw(); });
+  $('#cats').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (b) { filters.cat = b.dataset.cat; viewHome(); } });
+}
+
+function viewCourse(id) {
+  const c = getCourse(id); if (!c) return viewNotFound();
+  const u = me(), preview = u?.role === 'admin';
+  const enrolled = isEnrolled(id, u), done = doneList(id, u), pct = pctOf(c, u), rec = quizRec(id, u);
+  const open = enrolled || preview;
+  const nextIdx = Math.max(0, c.lessons.findIndex((_, i) => !done.includes(i)));
+  const complete = u && isComplete(c, u);
+  app.innerHTML = `
+    ${backLink('#/', 'All courses')}
+    <div class="grid lg:grid-cols-3 gap-8">
+      <div class="lg:col-span-2">
+        <div class="flex items-center gap-3">
+          <span class="w-12 h-12 rounded-xl inline-flex items-center justify-center ${c.tint}">${icon(c.icon, 'w-6 h-6')}</span>
+          <div class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">${c.category} · ${c.level}</div>
+        </div>
+        <h1 class="text-3xl font-bold tracking-tight mt-4">${esc(c.title)}</h1>
+        <p class="text-slate-600 dark:text-slate-300 mt-3 text-lg">${esc(c.description)}</p>
+        <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-500 dark:text-slate-400 mt-5">
+          <span class="inline-flex items-center gap-2">${avatar(c.instructor, 'w-6 h-6 text-[10px]')}${esc(c.instructor)}</span>
+          <span class="inline-flex items-center gap-1.5">${icon('book', 'w-4 h-4')}${c.lessons.length} lessons</span>
+          <span class="inline-flex items-center gap-1.5">${icon('clock', 'w-4 h-4')}${c.minutes} minutes</span>
+        </div>
+        <h2 class="text-lg font-semibold mt-10 mb-3">Curriculum</h2>
+        <ol class="${cardCls} divide-y divide-slate-200 dark:divide-slate-800 overflow-hidden">
+          ${c.lessons.map((l, i) => `<li><a href="${open ? `#/learn/${id}/${i}` : '#/course/' + id}" data-locked="${!open}" class="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/60">
+              <span class="w-7 h-7 rounded-full inline-flex items-center justify-center text-xs font-semibold ${done.includes(i) ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}">${done.includes(i) ? icon('check', 'w-4 h-4') : i + 1}</span>
+              <span class="flex-1 font-medium">${esc(l.title)}</span>
+              ${open ? '' : `<span class="text-slate-400">${icon('lock', 'w-4 h-4')}</span>`}
+              <span class="text-xs text-slate-500 dark:text-slate-400">${l.minutes} min</span></a></li>`).join('')}
+          <li><a href="${open ? `#/quiz/${id}` : '#/course/' + id}" data-locked="${!open}" class="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/60">
+            <span class="w-7 h-7 rounded-full inline-flex items-center justify-center bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-300">${icon('question', 'w-4 h-4')}</span>
+            <span class="flex-1 font-medium">Final quiz</span>
+            ${open ? '' : `<span class="text-slate-400">${icon('lock', 'w-4 h-4')}</span>`}
+            <span class="text-xs text-slate-500 dark:text-slate-400">${rec ? `Best ${rec.best}%` : `${c.quiz.length} questions`}</span></a></li>
+        </ol>
+      </div>
+      <aside class="${cardCls} p-6 h-fit lg:sticky lg:top-24">
+        ${preview ? `<p class="font-semibold">Admin preview</p><p class="text-sm text-slate-500 dark:text-slate-400 mt-1">You can read every lesson and try the quiz. Nothing is recorded for admin accounts.</p>
+          <a href="#/learn/${id}/0" class="${btnPrimary} w-full mt-5">Preview lessons</a>` :
+        enrolled ? `
+          <div class="flex items-center justify-between"><p class="font-semibold">Your progress</p>${badge(statusOf(c, u))}</div>
+          <div class="mt-4">${bar(pct)}</div>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">${done.length} of ${c.lessons.length} lessons · ${pct}%</p>
+          <a href="#/learn/${id}/${nextIdx}" class="${btnPrimary} w-full mt-5">${pct === 0 ? 'Start course' : pct === 100 ? 'Review lessons' : 'Continue learning'}</a>
+          ${complete ? `<a href="#/certificate/${id}" class="${btnGhost} w-full mt-2">${icon('cap', 'w-4 h-4')}View certificate</a>` : ''}
+          <button id="unenroll" class="w-full mt-3 text-sm text-slate-500 hover:text-rose-600">Leave course</button>` : `
+          <p class="font-semibold text-lg">Free course</p>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">${u ? 'Enroll to unlock the lessons, track your progress and take the quiz.' : 'Create a free account to enroll and track your progress.'}</p>
+          <button id="enroll" class="${btnPrimary} w-full mt-5">${u ? 'Enroll now' : 'Sign in to enroll'}</button>`}
+      </aside>
+    </div>`;
+
+  $('#enroll')?.addEventListener('click', () => {
+    if (!u) { redirectTo = '#/course/' + id; return go('#/login'); }
+    P(u.id).enrolled.push(id); logEvent(u.id, 'enroll', id, `Enrolled in ${c.title}`); persist(); toast('You are enrolled'); viewCourse(id);
+  });
+  $('#unenroll')?.addEventListener('click', async () => {
+    if (!await dialog({ title: 'Leave this course?', message: 'Your lesson progress and quiz score for this course will be removed.', confirm: 'Leave course', danger: true })) return;
+    const p = P(u.id); p.enrolled = p.enrolled.filter(x => x !== id); delete p.done[id]; delete p.quiz[id];
+    logEvent(u.id, 'leave', id, `Left ${c.title}`); persist(); viewCourse(id);
+  });
+  $$('[data-locked="true"]').forEach(a => a.addEventListener('click', () => toast(u ? 'Enroll to unlock this lesson' : 'Sign in and enroll to unlock')));
+}
+
+function viewLesson(id, idx) {
+  const c = getCourse(id); idx = Number(idx); if (!c || !c.lessons[idx]) return viewNotFound();
+  const u = me(); if (!u) { redirectTo = location.hash; return go('#/login'); }
+  const preview = u.role === 'admin';
+  if (!preview && !isEnrolled(id, u)) return go('#/course/' + id);
+  const l = c.lessons[idx], done = doneList(id, u);
+  const prev = idx > 0 ? `#/learn/${id}/${idx - 1}` : null;
+  const next = idx < c.lessons.length - 1 ? `#/learn/${id}/${idx + 1}` : `#/quiz/${id}`;
+  app.innerHTML = `
+    <nav class="text-sm text-slate-500 dark:text-slate-400 mb-6 flex flex-wrap items-center gap-2" aria-label="Breadcrumb">
+      <a href="#/" class="hover:text-indigo-600">Courses</a><span>/</span><a href="#/course/${id}" class="hover:text-indigo-600">${esc(c.title)}</a><span>/</span><span class="text-slate-800 dark:text-slate-200">Lesson ${idx + 1}</span></nav>
+    <div class="grid lg:grid-cols-4 gap-8">
+      <aside class="lg:col-span-1 order-2 lg:order-1 ${cardCls} p-4 h-fit lg:sticky lg:top-24">
+        ${preview ? '' : `<div class="px-2 pt-1 pb-3">${bar(pctOf(c, u))}<p class="text-xs text-slate-500 dark:text-slate-400 mt-1.5">${pctOf(c, u)}% complete</p></div>`}
+        <ul class="space-y-0.5 text-sm">
+          ${c.lessons.map((x, i) => `<li><a href="#/learn/${id}/${i}" class="flex items-center gap-3 px-3 py-2 rounded-lg ${i === idx ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 font-semibold' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}">
+            <span class="w-5 h-5 rounded-full inline-flex items-center justify-center text-[10px] ${done.includes(i) ? 'bg-emerald-500 text-white' : 'border border-slate-300 dark:border-slate-600'}">${done.includes(i) ? icon('check', 'w-3 h-3') : i + 1}</span><span>${esc(x.title)}</span></a></li>`).join('')}
+          <li><a href="#/quiz/${id}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><span class="w-5 h-5 inline-flex items-center justify-center text-indigo-500">${icon('question', 'w-4 h-4')}</span><span>Final quiz</span></a></li>
+        </ul>
+      </aside>
+      <article class="lg:col-span-3 order-1 lg:order-2 ${cardCls} p-6 sm:p-10">
+        <p class="text-sm text-slate-500 dark:text-slate-400">Lesson ${idx + 1} of ${c.lessons.length} · ${l.minutes} min read</p>
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight mt-1">${esc(l.title)}</h1>
+        <div class="prose-lesson mt-5 max-w-3xl">${l.content}</div>
+        <div class="flex flex-wrap items-center gap-3 mt-10 pt-6 border-t border-slate-200 dark:border-slate-800">
+          ${prev ? `<a href="${prev}" class="${btnGhost}">${icon('left', 'w-4 h-4')}Previous</a>` : ''}
+          ${preview ? '' : `<button id="complete" class="${done.includes(idx) ? btnGhost : btnPrimary} sm:ml-auto">${done.includes(idx) ? `${icon('check', 'w-4 h-4')}Completed · undo` : 'Mark as complete'}</button>`}
+          <a href="${next}" class="${btnPrimary} ${preview ? 'sm:ml-auto' : ''}">${idx === c.lessons.length - 1 ? 'Take quiz' : 'Next lesson'}${icon('right', 'w-4 h-4')}</a>
+        </div>
+      </article>
+    </div>`;
+  $('#complete')?.addEventListener('click', () => {
+    const p = P(u.id), list = doneList(id, u), had = list.includes(idx);
+    p.done[id] = had ? list.filter(x => x !== idx) : [...list, idx];
+    if (!had) logEvent(u.id, 'lesson', id, `Completed “${l.title}” in ${c.title}`);
+    persist();
+    if (!had) toast(pctOf(c, u) === 100 ? 'All lessons complete – take the quiz' : 'Lesson completed');
+    viewLesson(id, idx);
+  });
+}
+
+function viewQuiz(id) {
+  const c = getCourse(id); if (!c) return viewNotFound();
+  const u = me(); if (!u) { redirectTo = location.hash; return go('#/login'); }
+  const preview = u.role === 'admin';
+  if (!preview && !isEnrolled(id, u)) return go('#/course/' + id);
+  app.innerHTML = `
+    ${backLink('#/course/' + id, esc(c.title))}
+    <div class="max-w-2xl mx-auto">
+      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Final quiz</h1>
+      <p class="text-slate-500 dark:text-slate-400 mt-1">${esc(c.title)} · ${c.quiz.length} questions · ${PASS_MARK}% to pass${preview ? ' · preview (not recorded)' : ''}</p>
+      <form id="quizForm" class="mt-8 space-y-5">
+        ${c.quiz.map((q, qi) => `<fieldset class="${cardCls} p-5 sm:p-6">
+          <legend class="sr-only">Question ${qi + 1}</legend>
+          <p class="font-semibold mb-4"><span class="text-indigo-600 dark:text-indigo-400 mr-1">${qi + 1}.</span>${esc(q.q)}</p>
+          <div class="space-y-2">${q.options.map((o, oi) => `<label data-q="${qi}" data-o="${oi}" class="flex items-center gap-3 px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 text-sm">
+            <input type="radio" name="q${qi}" value="${oi}" class="accent-indigo-600" /><span>${esc(o)}</span></label>`).join('')}</div></fieldset>`).join('')}
+        <button class="${btnPrimary} w-full">Submit answers</button>
+      </form>
+      <div id="result" class="mt-6"></div>
+    </div>`;
+  $('#quizForm').addEventListener('submit', e => {
+    e.preventDefault(); const fd = new FormData(e.target);
+    if (c.quiz.some((_, i) => fd.get('q' + i) === null)) return toast('Please answer every question');
+    let correct = 0;
+    c.quiz.forEach((q, i) => {
+      const chosen = Number(fd.get('q' + i)); if (chosen === q.answer) correct++;
+      $$(`label[data-q="${i}"]`).forEach(lab => {
+        const o = Number(lab.dataset.o); lab.classList.remove('border-slate-200', 'dark:border-slate-700');
+        if (o === q.answer) lab.classList.add('border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-950/40');
+        else if (o === chosen) lab.classList.add('border-rose-500', 'bg-rose-50', 'dark:bg-rose-950/40');
+        lab.querySelector('input').disabled = true;
+      });
+    });
+    const pct = Math.round((correct / c.quiz.length) * 100), ok = pct >= PASS_MARK;
+    let certReady = false;
+    if (!preview) {
+      const wasComplete = isComplete(c, u), p = P(u.id), prev = p.quiz[id];
+      p.quiz[id] = { best: Math.max(pct, prev?.best ?? 0), last: pct, attempts: (prev?.attempts || 0) + 1, at: Date.now(), passedAt: prev?.passedAt || (ok ? Date.now() : null) };
+      logEvent(u.id, 'quiz', id, `Scored ${pct}% on the ${c.title} quiz`);
+      if (!wasComplete && isComplete(c, u)) logEvent(u.id, 'complete', id, `Completed ${c.title}`);
+      persist(); certReady = isComplete(c, u);
+    }
+    $('#result').innerHTML = `<div class="${cardCls} p-8 text-center">
+      <p class="text-4xl font-bold tracking-tight ${ok ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}">${pct}%</p>
+      <p class="font-semibold mt-1">${correct} of ${c.quiz.length} correct</p>
+      <p class="text-slate-500 dark:text-slate-400 mt-1 text-sm">${ok ? 'Well done, you passed.' : 'Not quite there yet. Review the lessons and try again.'}</p>
+      <div class="flex flex-wrap gap-3 justify-center mt-6">
+        <button id="retake" class="${btnGhost}">${icon('refresh', 'w-4 h-4')}Retake quiz</button>
+        ${certReady ? `<a href="#/certificate/${id}" class="${btnPrimary}">${icon('cap', 'w-4 h-4')}Get certificate</a>` : `<a href="#/${preview ? 'course/' + id : 'dashboard'}" class="${btnPrimary}">${preview ? 'Back to course' : 'My Learning'}</a>`}
+      </div></div>`;
+    $('#quizForm button').disabled = true;
+    $('#retake').onclick = () => viewQuiz(id);
+    $('#result').scrollIntoView({ behavior: 'smooth' });
+  });
+}
+
+function viewDashboard() {
+  const u = me(); if (u.role === 'admin') return go('#/admin');
+  const mine = COURSES.filter(c => isEnrolled(c.id, u));
+  const completed = mine.filter(c => isComplete(c, u)).length;
+  const lessons = Object.values(P(u.id).done).reduce((n, a) => n + a.length, 0);
+  const avg = mean(Object.values(P(u.id).quiz).map(q => q.best));
+  const cont = mine.find(c => !isComplete(c, u));
+  const contIdx = cont ? Math.max(0, cont.lessons.findIndex((_, i) => !doneList(cont.id, u).includes(i))) : 0;
+  app.innerHTML = `
+    ${pageHead('My Learning', `Signed in as ${esc(u.name)}`)}
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      ${stat('Enrolled courses', mine.length)}${stat('Completed', completed)}${stat('Lessons finished', lessons)}${stat('Average quiz score', avg == null ? '—' : avg + '%')}
+    </div>
+    ${cont ? `<div class="${cardCls} p-5 sm:p-6 mt-8 flex flex-col sm:flex-row sm:items-center gap-4">
+      <span class="w-11 h-11 rounded-lg inline-flex items-center justify-center ${cont.tint}">${icon(cont.icon, 'w-6 h-6')}</span>
+      <div class="flex-1"><p class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Continue learning</p><p class="font-semibold text-lg">${esc(cont.title)}</p>
+        <div class="max-w-xs mt-2">${bar(pctOf(cont, u))}</div></div>
+      <a href="#/learn/${cont.id}/${contIdx}" class="${btnPrimary}">Resume${icon('right', 'w-4 h-4')}</a></div>` : ''}
+    <h2 class="text-xl font-semibold mt-10 mb-4">Your courses</h2>
+    ${mine.length ? `<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">${mine.map(courseCard).join('')}</div>` :
+      `<div class="${cardCls} p-12 text-center"><p class="text-slate-500 dark:text-slate-400">You have not enrolled in any courses yet.</p><a href="#/" class="${btnPrimary} mt-4">Browse courses</a></div>`}`;
+}
+
+async function viewCertificate(id) {
+  const c = getCourse(id), u = me();
+  if (!c || !u || !isComplete(c, u)) return go('#/course/' + id);
+  const date = quizRec(id, u).passedAt || Date.now();
+  const code = ('LH-' + hashPw(u.id + id, 'cert').slice(0, 8)).toUpperCase();
+  app.innerHTML = `
+    <div class="no-print">${backLink('#/dashboard', 'My Learning')}</div>
+    <div class="cert max-w-3xl mx-auto bg-white text-slate-800 border-[10px] border-double border-indigo-200 rounded-lg shadow-lg px-6 sm:px-16 py-12 sm:py-16 text-center">
+      <span class="w-14 h-14 rounded-2xl bg-indigo-600 text-white inline-flex items-center justify-center">${icon('cap', 'w-8 h-8')}</span>
+      <p class="uppercase tracking-[.3em] text-xs text-slate-500 mt-6">Certificate of completion</p>
+      <p class="text-slate-500 mt-8">This certifies that</p>
+      <h1 class="text-3xl sm:text-4xl font-bold tracking-tight mt-2">${esc(u.name)}</h1>
+      <p class="text-slate-500 mt-6">has successfully completed the course</p>
+      <h2 class="text-2xl font-semibold text-indigo-700 mt-2">${esc(c.title)}</h2>
+      <p class="text-slate-500 mt-6 text-sm">${c.lessons.length} lessons · ${c.minutes} minutes · Final quiz score ${quizRec(id, u).best}%</p>
+      <div class="flex justify-between items-end mt-14 text-sm text-slate-500">
+        <div class="text-left"><p class="font-medium text-slate-800">${fmtDate(date)}</p><p class="text-xs">Date issued</p></div>
+        <div class="text-right"><p class="font-medium text-slate-800">${esc(c.instructor)}</p><p class="text-xs">Instructor</p></div>
+      </div>
+      <p class="text-[11px] text-slate-400 mt-8">Certificate ID ${code}</p>
+    </div>
+    <div class="no-print text-center mt-6"><button onclick="window.print()" class="${btnPrimary}">${icon('print', 'w-4 h-4')}Print or save as PDF</button></div>`;
+}
+
+/* ================================================================
+   ADMIN VIEWS
+   ================================================================ */
+function adminTabs(active) {
+  const t = (href, label, key) => `<a href="${href}" ${active === key ? 'aria-current="page"' : ''} class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px ${active === key ? 'border-indigo-600 text-indigo-700 dark:text-indigo-300 dark:border-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}">${label}</a>`;
+  return `<div class="flex gap-1 border-b border-slate-200 dark:border-slate-800 mb-8">${t('#/admin', 'Overview', 'overview')}${t('#/admin/students', 'Students', 'students')}${t('#/admin/courses', 'Courses', 'courses')}</div>`;
+}
+
+function studentSummary(u) {
+  const p = P(u.id);
+  const enrolledCourses = COURSES.filter(c => p.enrolled.includes(c.id));
+  const progresses = enrolledCourses.map(c => pctOf(c, u));
+  return {
+    u, enrolled: enrolledCourses.length, completed: enrolledCourses.filter(c => isComplete(c, u)).length,
+    progress: mean(progresses) ?? 0, quiz: mean(Object.values(p.quiz).map(q => q.best)), last: u.lastActive
+  };
+}
+
+const EVENT_ICON = { enroll: 'book', lesson: 'check', quiz: 'question', complete: 'cap', leave: 'x' };
+
+function viewAdminOverview() {
+  const st = students(); const sums = st.map(studentSummary);
+  const enrollments = sums.reduce((n, s) => n + s.enrolled, 0);
+  const completions = sums.reduce((n, s) => n + s.completed, 0);
+  const active7 = st.filter(u => Date.now() - u.lastActive < 7 * DAY).length;
+  const allScores = st.flatMap(u => Object.values(P(u.id).quiz).map(q => q.best));
+  const maxEnroll = Math.max(1, ...COURSES.map(c => st.filter(u => isEnrolled(c.id, u)).length));
+  const feed = st.flatMap(u => P(u.id).log.map(e => ({ ...e, user: u }))).sort((a, b) => b.t - a.t).slice(0, 10);
+
+  app.innerHTML = `${pageHead('Admin', 'Track student enrollment, progress and performance.',
+    `<button id="exportAll" class="${btnGhost}">${icon('download', 'w-4 h-4')}Export CSV</button>`)}
+    ${adminTabs('overview')}
+    ${st.length === 0 ? `<div class="${cardCls} p-12 text-center">
+      <span class="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-300 inline-flex items-center justify-center">${icon('users', 'w-6 h-6')}</span>
+      <h2 class="text-lg font-semibold mt-4">No students yet</h2>
+      <p class="text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">Students appear here as soon as they create an account. To see what the dashboard looks like, load a few sample students.</p>
+      <button id="samples" class="${btnPrimary} mt-5">Load sample students</button></div>` : `
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      ${stat('Students', st.length)}${stat('Active this week', active7, `${st.length ? Math.round(active7 / st.length * 100) : 0}% of students`)}
+      ${stat('Enrollments', enrollments)}${stat('Course completions', completions)}${stat('Avg quiz score', allScores.length ? mean(allScores) + '%' : '—')}
+    </div>
+    <div class="grid lg:grid-cols-5 gap-6 mt-8">
+      <section class="${cardCls} p-6 lg:col-span-2">
+        <h2 class="font-semibold">Enrollment by course</h2>
+        <div class="space-y-4 mt-5">${COURSES.map(c => { const n = st.filter(u => isEnrolled(c.id, u)).length; return `<div>
+          <div class="flex justify-between text-sm mb-1.5"><span class="truncate pr-2">${esc(c.title)}</span><span class="font-semibold">${n}</span></div>${bar(Math.round(n / maxEnroll * 100))}</div>`; }).join('')}</div>
+      </section>
+      <section class="${cardCls} p-6 lg:col-span-3">
+        <h2 class="font-semibold">Recent activity</h2>
+        ${feed.length ? `<ul class="mt-4 divide-y divide-slate-100 dark:divide-slate-800">${feed.map(e => `<li class="py-3 flex items-start gap-3">
+          <span class="mt-0.5 w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 inline-flex items-center justify-center">${icon(EVENT_ICON[e.type] || 'check', 'w-4 h-4')}</span>
+          <div class="flex-1 min-w-0 text-sm"><p><a href="#/admin/student/${e.user.id}" class="font-semibold hover:text-indigo-600">${esc(e.user.name)}</a> <span class="text-slate-600 dark:text-slate-300">${esc(e.text)}</span></p></div>
+          <span class="text-xs text-slate-500 whitespace-nowrap">${ago(e.t)}</span></li>`).join('')}</ul>` : `<p class="text-sm text-slate-500 mt-4">No activity yet.</p>`}
+      </section>
+    </div>`}`;
+  $('#samples')?.addEventListener('click', () => { loadSamples(); toast('Sample students added'); viewAdminOverview(); });
+  $('#exportAll').addEventListener('click', exportCSV);
+}
+
+function viewAdminStudents() {
+  const st = students();
+  let sort = viewAdminStudents.sort || 'recent', q = viewAdminStudents.q || '';
+  app.innerHTML = `${pageHead('Students', `${st.length} registered`, `<button id="exportAll" class="${btnGhost}">${icon('download', 'w-4 h-4')}Export CSV</button>`)}
+    ${adminTabs('students')}
+    <div class="flex flex-col sm:flex-row gap-3 mb-4">
+      <div class="relative flex-1"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">${icon('search', 'w-4 h-4')}</span>
+        <input id="sq" type="search" aria-label="Search students" placeholder="Search by name or email" value="${esc(q)}" class="${inputCls} !pl-9" /></div>
+      <select id="ss" aria-label="Sort students" class="${inputCls} sm:w-52">
+        <option value="recent">Most recently active</option><option value="name">Name (A–Z)</option>
+        <option value="progress">Highest progress</option><option value="joined">Newest members</option></select>
+    </div>
+    <div class="${cardCls} overflow-x-auto"><table class="w-full text-sm min-w-[760px]">
+      <thead class="text-left text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+        <tr><th class="px-5 py-3 font-medium">Student</th><th class="px-3 py-3 font-medium">Courses</th><th class="px-3 py-3 font-medium w-44">Avg progress</th><th class="px-3 py-3 font-medium">Avg quiz</th><th class="px-3 py-3 font-medium">Last active</th><th class="px-3 py-3 font-medium">Joined</th><th class="px-5 py-3"></th></tr></thead>
+      <tbody id="rows" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody></table></div>`;
+  $('#ss').value = sort;
+  const draw = () => {
+    let rows = st.map(studentSummary).filter(s => (s.u.name + s.u.email).toLowerCase().includes(q.toLowerCase()));
+    const sorters = { recent: (a, b) => b.last - a.last, name: (a, b) => a.u.name.localeCompare(b.u.name), progress: (a, b) => b.progress - a.progress, joined: (a, b) => b.u.created - a.u.created };
+    rows.sort(sorters[sort]);
+    $('#rows').innerHTML = rows.length ? rows.map(s => `<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+      <td class="px-5 py-3.5"><a href="#/admin/student/${s.u.id}" class="flex items-center gap-3">${avatar(s.u.name)}<span><span class="font-medium block">${esc(s.u.name)}${s.u.demo ? ' <span class="ml-1 text-[10px] uppercase tracking-wide text-slate-400 border border-slate-300 dark:border-slate-600 rounded px-1">sample</span>' : ''}</span><span class="text-xs text-slate-500 dark:text-slate-400">${esc(s.u.email)}</span></span></a></td>
+      <td class="px-3 py-3.5">${s.enrolled}${s.completed ? ` <span class="text-xs text-emerald-600 dark:text-emerald-400">(${s.completed} done)</span>` : ''}</td>
+      <td class="px-3 py-3.5"><div class="flex items-center gap-3"><div class="flex-1">${bar(s.progress)}</div><span class="text-xs w-8 text-right">${s.progress}%</span></div></td>
+      <td class="px-3 py-3.5">${s.quiz == null ? '—' : s.quiz + '%'}</td>
+      <td class="px-3 py-3.5 text-slate-600 dark:text-slate-300">${ago(s.last)}</td>
+      <td class="px-3 py-3.5 text-slate-600 dark:text-slate-300">${fmtDate(s.u.created)}</td>
+      <td class="px-5 py-3.5 text-right"><a href="#/admin/student/${s.u.id}" class="text-indigo-600 dark:text-indigo-400 font-medium hover:underline">View</a></td></tr>`).join('')
+      : `<tr><td colspan="7" class="px-5 py-12 text-center text-slate-500">${st.length ? 'No students match your search.' : 'No students yet. They appear here once they sign up.'}</td></tr>`;
+  };
+  draw();
+  $('#sq').addEventListener('input', e => { q = viewAdminStudents.q = e.target.value; draw(); });
+  $('#ss').addEventListener('change', e => { sort = viewAdminStudents.sort = e.target.value; draw(); });
+  $('#exportAll').addEventListener('click', exportCSV);
+}
+
+function viewAdminStudent(id) {
+  const s = userById(id); if (!s || s.role !== 'student') return viewNotFound();
+  const sum = studentSummary(s), p = P(s.id);
+  const log = [...p.log].sort((a, b) => b.t - a.t).slice(0, 25);
+  app.innerHTML = `${backLink('#/admin/students', 'All students')}
+    <div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-8">
+      ${avatar(s.name, 'w-14 h-14 text-lg')}
+      <div class="flex-1"><h1 class="text-2xl font-bold tracking-tight">${esc(s.name)}</h1><p class="text-slate-500 dark:text-slate-400">${esc(s.email)} · Joined ${fmtDate(s.created)} · Last active ${ago(s.lastActive)}</p></div>
+      <div class="flex gap-2"><button id="reset" class="${btnGhost}">${icon('refresh', 'w-4 h-4')}Reset progress</button><button id="del" class="${btnGhost} !text-rose-600 !border-rose-200 dark:!border-rose-900">${icon('trash', 'w-4 h-4')}Remove</button></div>
+    </div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      ${stat('Courses enrolled', sum.enrolled)}${stat('Courses completed', sum.completed)}${stat('Average progress', sum.progress + '%')}${stat('Average quiz score', sum.quiz == null ? '—' : sum.quiz + '%')}
+    </div>
+    <h2 class="text-lg font-semibold mt-10 mb-3">Course progress</h2>
+    <div class="${cardCls} overflow-x-auto"><table class="w-full text-sm min-w-[640px]">
+      <thead class="text-left text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800"><tr>
+        <th class="px-5 py-3 font-medium">Course</th><th class="px-3 py-3 font-medium">Status</th><th class="px-3 py-3 font-medium w-44">Lessons</th><th class="px-3 py-3 font-medium">Best quiz</th><th class="px-5 py-3 font-medium">Attempts</th></tr></thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+      ${p.enrolled.length ? COURSES.filter(c => p.enrolled.includes(c.id)).map(c => { const q = quizRec(c.id, s); return `<tr>
+        <td class="px-5 py-3.5 font-medium">${esc(c.title)}</td><td class="px-3 py-3.5">${badge(statusOf(c, s))}</td>
+        <td class="px-3 py-3.5"><div class="flex items-center gap-3"><div class="flex-1">${bar(pctOf(c, s))}</div><span class="text-xs whitespace-nowrap">${doneList(c.id, s).length}/${c.lessons.length}</span></div></td>
+        <td class="px-3 py-3.5">${q ? q.best + '%' : '—'}</td><td class="px-5 py-3.5">${q ? q.attempts : 0}</td></tr>`; }).join('') :
+        `<tr><td colspan="5" class="px-5 py-10 text-center text-slate-500">Not enrolled in any courses.</td></tr>`}
+      </tbody></table></div>
+    <h2 class="text-lg font-semibold mt-10 mb-3">Activity log</h2>
+    <div class="${cardCls} px-5">${log.length ? `<ul class="divide-y divide-slate-100 dark:divide-slate-800">${log.map(e => `<li class="py-3 flex items-center gap-3 text-sm">
+      <span class="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 inline-flex items-center justify-center">${icon(EVENT_ICON[e.type] || 'check', 'w-4 h-4')}</span>
+      <span class="flex-1">${esc(e.text)}</span><span class="text-xs text-slate-500 whitespace-nowrap">${fmtDate(e.t)} · ${ago(e.t)}</span></li>`).join('')}</ul>` : `<p class="py-8 text-center text-sm text-slate-500">No activity recorded.</p>`}</div>`;
+
+  $('#reset').addEventListener('click', async () => {
+    if (!await dialog({ title: 'Reset progress?', message: `All enrollments, lesson progress and quiz scores for ${s.name} will be cleared. The account stays.`, confirm: 'Reset progress', danger: true })) return;
+    db.progress[s.id] = { enrolled: [], done: {}, quiz: {}, log: [] }; persist(); toast('Progress reset'); viewAdminStudent(id);
+  });
+  $('#del').addEventListener('click', async () => {
+    if (!await dialog({ title: 'Remove this student?', message: `${s.name} and all of their progress will be permanently deleted.`, confirm: 'Remove student', danger: true })) return;
+    db.users = db.users.filter(x => x.id !== s.id); delete db.progress[s.id]; persist(); toast('Student removed'); go('#/admin/students');
+  });
+}
+
+function viewAdminCourses() {
+  const st = students();
+  app.innerHTML = `${pageHead('Courses', 'How each course is performing.')}${adminTabs('courses')}
+    <div class="space-y-6">${COURSES.map(c => {
+      const en = st.filter(u => isEnrolled(c.id, u));
+      const done = en.filter(u => isComplete(c, u)).length;
+      const scores = en.map(u => quizRec(c.id, u)).filter(Boolean);
+      const passRate = scores.length ? Math.round(scores.filter(q => q.best >= PASS_MARK).length / scores.length * 100) : null;
+      return `<section class="${cardCls} p-6">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="w-10 h-10 rounded-lg inline-flex items-center justify-center ${c.tint}">${icon(c.icon, 'w-5 h-5')}</span>
+          <div class="flex-1"><h2 class="font-semibold text-lg">${esc(c.title)}</h2><p class="text-xs text-slate-500 dark:text-slate-400">${esc(c.instructor)} · ${c.lessons.length} lessons</p></div>
+        </div>
+        <dl class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-5 text-sm">
+          ${[['Enrolled', en.length], ['Avg progress', en.length ? mean(en.map(u => pctOf(c, u))) + '%' : '—'], ['Completed', done], ['Avg best score', scores.length ? mean(scores.map(q => q.best)) + '%' : '—'], ['Quiz pass rate', passRate == null ? '—' : passRate + '%']]
+            .map(([k, v]) => `<div><dt class="text-xs text-slate-500 dark:text-slate-400">${k}</dt><dd class="text-xl font-bold mt-0.5">${v}</dd></div>`).join('')}
+        </dl>
+        <h3 class="text-sm font-semibold mt-6 mb-3">Lesson completion (where students drop off)</h3>
+        <div class="space-y-3">${c.lessons.map((l, i) => { const n = en.filter(u => doneList(c.id, u).includes(i)).length, pc = en.length ? Math.round(n / en.length * 100) : 0;
+          return `<div class="grid grid-cols-[1fr_auto] sm:grid-cols-[16rem_1fr_3rem] items-center gap-x-4 gap-y-1 text-sm"><span class="truncate">${i + 1}. ${esc(l.title)}</span><span class="sm:order-3 text-right text-xs">${pc}%</span><div class="col-span-2 sm:col-span-1 sm:order-2">${bar(pc, 'bg-emerald-500')}</div></div>`; }).join('')}</div>
+      </section>`; }).join('')}</div>`;
+}
+
+function exportCSV() {
+  const cell = v => { let s = String(v ?? ''); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
+  const head = ['Name', 'Email', 'Joined', 'Last active', 'Courses enrolled', 'Courses completed', 'Average progress %', 'Average quiz %'];
+  const rows = students().map(studentSummary).map(s => [s.u.name, s.u.email, new Date(s.u.created).toISOString().slice(0, 10), new Date(s.u.lastActive).toISOString().slice(0, 10), s.enrolled, s.completed, s.progress, s.quiz ?? '']);
+  const csv = [head, ...rows].map(r => r.map(cell).join(',')).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = `learnhub-students-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); URL.revokeObjectURL(a.href);
+  toast('CSV downloaded');
+}
+
+/* sample data so the admin dashboard is not empty on first run */
+const SAMPLES = [
+  { name: 'Aisha Njeri', email: 'aisha.njeri@example.com', joined: 28, last: 0, courses: { 'html-basics': { lessons: [0, 1, 2], quiz: 100 }, 'tailwind-css': { lessons: [0, 1, 2], quiz: 67 }, 'js-essentials': { lessons: [0] } } },
+  { name: 'Daniel Kiprop', email: 'daniel.kiprop@example.com', joined: 21, last: 2, courses: { 'html-basics': { lessons: [0, 1], quiz: 33 }, 'digital-marketing': { lessons: [0, 1, 2], quiz: 100 } } },
+  { name: 'Faith Achieng', email: 'faith.achieng@example.com', joined: 15, last: 5, courses: { 'js-essentials': { lessons: [0, 1] }, 'tailwind-css': { lessons: [0] } } },
+  { name: 'Samuel Mwangi', email: 'samuel.mwangi@example.com', joined: 12, last: 9, courses: { 'digital-marketing': { lessons: [0] } } },
+  { name: 'Linet Wambui', email: 'linet.wambui@example.com', joined: 6, last: 1, courses: { 'html-basics': { lessons: [0, 1, 2], quiz: 67 }, 'js-essentials': { lessons: [0, 1, 2], quiz: 100 }, 'tailwind-css': {} } },
+  { name: 'Peter Otieno', email: 'peter.otieno@example.com', joined: 3, last: 3, courses: {} }
+];
+function loadSamples() {
+  const now = Date.now();
+  SAMPLES.forEach(s => {
+    if (db.users.some(u => u.email === s.email)) return;
+    const u = { id: uid(), name: s.name, email: s.email, salt: '', pass: '', role: 'student', created: now - s.joined * DAY, lastActive: now - s.last * DAY, demo: true };
+    db.users.push(u); const p = P(u.id);
+    Object.entries(s.courses).forEach(([cid, d], ci) => {
+      const c = getCourse(cid); const span = Math.max(1, s.joined - s.last);
+      const t0 = u.created + DAY * (1 + ci);
+      p.enrolled.push(cid); p.log.push({ t: t0, type: 'enroll', courseId: cid, text: `Enrolled in ${c.title}` });
+      p.done[cid] = d.lessons || [];
+      (d.lessons || []).forEach((li, k) => p.log.push({ t: Math.min(now - s.last * DAY, t0 + DAY * (k + 1) * 0.6), type: 'lesson', courseId: cid, text: `Completed “${c.lessons[li].title}” in ${c.title}` }));
+      if (d.quiz != null) {
+        const t = now - s.last * DAY - ci * 3600e3;
+        p.quiz[cid] = { best: d.quiz, last: d.quiz, attempts: d.quiz < 60 ? 2 : 1, at: t, passedAt: d.quiz >= 60 ? t : null };
+        p.log.push({ t, type: 'quiz', courseId: cid, text: `Scored ${d.quiz}% on the ${c.title} quiz` });
+        if (isComplete(c, u)) p.log.push({ t: t + 1000, type: 'complete', courseId: cid, text: `Completed ${c.title}` });
+      }
+    });
+  });
+  persist();
+}
+
+function viewNotFound() {
+  app.innerHTML = `<div class="text-center py-24"><p class="text-5xl font-bold text-slate-300 dark:text-slate-700">404</p><h1 class="text-xl font-semibold mt-3">Page not found</h1><a href="#/" class="${btnPrimary} mt-6">Back to courses</a></div>`;
+}
+
+/* ================================================================
+   ROUTER
+   ================================================================ */
+function route() {
+  const [page, a, b] = (location.hash || '#/').slice(2).split('/');
+  renderHeader(); window.scrollTo(0, 0);
+  switch (page) {
+    case '': return viewHome();
+    case 'login': return viewAuth('signin');
+    case 'signup': return viewAuth('signup');
+    case 'course': return viewCourse(a);
+    case 'learn': return viewLesson(a, b);
+    case 'quiz': return viewQuiz(a);
+    case 'dashboard': return requireUser() && viewDashboard();
+    case 'certificate': return requireUser() && viewCertificate(a);
+    case 'admin':
+      if (!requireAdmin()) return;
+      if (!a) return viewAdminOverview();
+      if (a === 'students') return viewAdminStudents();
+      if (a === 'student') return viewAdminStudent(b);
+      if (a === 'courses') return viewAdminCourses();
+      return viewNotFound();
+    default: return viewNotFound();
+  }
+}
+window.addEventListener('hashchange', route);
+
+try { if (localStorage.getItem(THEME_KEY) === 'dark' || (!localStorage.getItem(THEME_KEY) && matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark'); } catch (e) {}
+$('#year').textContent = new Date().getFullYear();
+route();
+</script>
+</body>
+</html>
