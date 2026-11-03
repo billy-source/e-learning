@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Course | LearnHub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <header class="border-b bg-white">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+      <a href="index.html" class="text-xl font-bold text-indigo-700">LearnHub</a>
+      <a href="index.html" class="text-sm font-medium hover:text-indigo-600">← All courses</a>
+    </div>
+  </header>
+
+  <main id="root" class="mx-auto max-w-6xl px-4 py-8"></main>
+
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script>
+    const id = new URLSearchParams(location.search).get("id");
+    const course = COURSES.find((c) => c.id === id);
+    const root = document.getElementById("root");
+    let current = 0;
+    let result = null; // quiz result: { pct, passed }
+
+    function enroll() { Store.enroll(course.id); render(); }
+    function pick(i) { current = i; render(); }
+    function toggle(lid) { Store.toggleLesson(course.id, lid); render(); }
+
+    function submitQuiz(e) {
+      e.preventDefault();
+      let correct = 0;
+      course.quiz.forEach((q, i) => {
+        const picked = document.querySelector(`input[name="q${i}"]:checked`);
+        if (picked && Number(picked.value) === q.answer) correct++;
+      });
+      const pct = Math.round((correct / course.quiz.length) * 100);
+      Store.setScore(course.id, pct);
+      result = { pct, correct, passed: pct >= PASS_MARK };
+      render();
+    }
+
+    function quizHTML() {
+      const questions = course.quiz.map((q, i) => `
+        <fieldset class="mt-5">
+          <legend class="font-medium">${i + 1}. ${esc(q.q)}</legend>
+          ${q.options.map((o, j) => `
+            <label class="mt-2 flex cursor-pointer items-center gap-2 rounded-lg border bg-white px-3 py-2 text-sm hover:border-indigo-500">
+              <input type="radio" name="q${i}" value="${j}" required /> ${esc(o)}
+            </label>`).join("")}
+        </fieldset>`).join("");
+      const best = Store.get().scores[course.id];
+      return `
+        <div class="mt-8 rounded-xl border bg-white p-6">
+          <h2 class="text-xl font-bold">Final quiz</h2>
+          <p class="text-sm text-gray-500">You need ${PASS_MARK}% to pass.${best !== undefined ? ` Your best score: ${best}%.` : ""}</p>
+          ${result ? `<p class="mt-4 rounded-lg px-4 py-3 text-sm font-medium ${result.passed ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}">
+              You scored ${result.pct}% (${result.correct} of ${course.quiz.length}). ${result.passed ? "Well done, you passed! 🎉" : "Not yet. Review the lessons and try again."}</p>` : ""}
+          <form onsubmit="submitQuiz(event)">${questions}
+            <button class="mt-6 rounded-lg bg-indigo-600 px-6 py-2.5 font-semibold text-white hover:bg-indigo-700">Submit answers</button>
+          </form>
+        </div>`;
+    }
+
+    function render() {
+      if (!course) {
+        root.innerHTML = `<p class="py-20 text-center">Course not found. <a class="text-indigo-600 underline" href="index.html">Back to courses</a></p>`;
+        return;
+      }
+      document.title = course.title + " | LearnHub";
+      const enrolled = Store.get().enrolled[course.id];
+      const done = enrolled ? enrolled.done : [];
+      const pct = Store.progress(course);
+      const lesson = course.lessons[current];
+      const allDone = enrolled && done.length === course.lessons.length;
+
+      root.innerHTML = `
+        <div class="rounded-xl bg-gradient-to-br ${course.color} p-8 text-white">
+          <p class="text-sm font-medium opacity-90">${esc(course.category)} · ${esc(course.level)}</p>
+          <h1 class="mt-1 text-3xl font-extrabold">${esc(course.title)}</h1>
+          <p class="mt-2 max-w-2xl">${esc(course.description)}</p>
+          <p class="mt-3 text-sm opacity-90">${esc(course.instructor)} · ${esc(course.duration)} · ${course.lessons.length} lessons</p>
+        </div>
+
+        ${!enrolled ? `
+          <div class="mt-6 rounded-xl border bg-white p-6 text-center">
+            <p class="font-medium">Enrol to start learning and track your progress.</p>
+            <button onclick="enroll()" class="mt-4 rounded-lg bg-indigo-600 px-6 py-2.5 font-semibold text-white hover:bg-indigo-700">Enrol for free</button>
+          </div>` : ""}
+
+        <div class="mt-6 grid gap-6 md:grid-cols-3">
+          <aside class="h-fit rounded-xl border bg-white p-4">
+            <h2 class="font-semibold">Lessons</h2>
+            <div class="mt-2 h-2 rounded-full bg-gray-200"><div class="h-2 rounded-full bg-indigo-600" style="width:${pct}%"></div></div>
+            <p class="mt-1 text-xs text-gray-500">${pct}% complete</p>
+            <ul class="mt-3 space-y-1">
+              ${course.lessons.map((l, i) => `
+                <li><button onclick="pick(${i})" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm ${i === current ? "bg-indigo-50 font-medium text-indigo-700" : "hover:bg-gray-50"}">
+                  <span>${done.includes(l.id) ? "✅" : "▫️"}</span><span class="flex-1">${esc(l.title)}</span>
+                  <span class="text-xs text-gray-400">${l.minutes}m</span></button></li>`).join("")}
+            </ul>
+          </aside>
+
+          <section class="md:col-span-2">
+            <div class="rounded-xl border bg-white p-6">
+              <p class="text-sm text-gray-500">Lesson ${current + 1} of ${course.lessons.length}</p>
+              <h2 class="mt-1 text-2xl font-bold">${esc(lesson.title)}</h2>
+              ${enrolled
+                ? `<p class="mt-4 leading-relaxed text-gray-700">${esc(lesson.content)}</p>
+                   <div class="mt-6 flex flex-wrap items-center gap-3">
+                     <button onclick="toggle('${lesson.id}')" class="rounded-lg px-5 py-2 text-sm font-semibold ${done.includes(lesson.id) ? "border border-green-600 text-green-700" : "bg-indigo-600 text-white hover:bg-indigo-700"}">
+                       ${done.includes(lesson.id) ? "✓ Completed (click to undo)" : "Mark as complete"}</button>
+                     ${current < course.lessons.length - 1 ? `<button onclick="pick(${current + 1})" class="rounded-lg border px-5 py-2 text-sm hover:bg-gray-50">Next lesson →</button>` : ""}
+                   </div>`
+                : `<p class="mt-4 text-gray-500">Enrol to read this lesson.</p>`}
+            </div>
+            ${allDone ? quizHTML() : enrolled ? `<p class="mt-6 text-sm text-gray-500">Complete all lessons to unlock the final quiz.</p>` : ""}
+          </section>
+        </div>`;
+    }
+
+    render();
+  </script>
+</body>
+</html>
